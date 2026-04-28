@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Guardian AI - Anti-Scam Shield</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
+        
+        body {
+            background-color: #131314;
+            color: #e3e3e3;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            align-items: center;
+        }
+
+        /* Header Area */
+        header {
+            width: 100%;
+            padding: 20px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 22px;
+            font-weight: 600;
+            background: linear-gradient(90deg, #4285f4, #ea4335, #fbbc05, #34a853);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        /* Main Chat Container */
+        #chat-container {
+            flex: 1;
+            width: 100%;
+            max-width: 800px;
+            overflow-y: auto;
+            padding: 40px 20px;
+            scrollbar-width: none;
+        }
+
+        #chat-container::-webkit-scrollbar { display: none; }
+
+        .welcome-screen {
+            text-align: center;
+            margin-top: 10vh;
+        }
+
+        .welcome-screen h1 {
+            font-size: 44px;
+            margin-bottom: 10px;
+            background: linear-gradient(to right, #4b90ff, #ff5546);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        /* AI Response Styling */
+        .response-box {
+            background: #1e1f20;
+            padding: 25px;
+            border-radius: 20px;
+            margin-bottom: 20px;
+            line-height: 1.6;
+            animation: fadeIn 0.5s ease-in-out;
+            border: 1px solid #333;
+        }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        .loader {
+            display: none;
+            margin: 20px 0;
+            color: #8ab4f8;
+            font-weight: 500;
+        }
+
+        .loader i { margin-right: 10px; }
+
+       
+        .input-wrapper {
+            width: 100%;
+            max-width: 800px;
+            padding: 20px;
+            position: sticky;
+            bottom: 0;
+            background: #131314;
+        }
+
+        .input-bar {
+            background: #1e1f20;
+            border-radius: 30px;
+            padding: 10px 20px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            transition: background 0.3s;
+            border: 1px solid transparent;
+        }
+
+        .input-bar:focus-within {
+            background: #28292a;
+            border-color: #444;
+        }
+
+       
+        #imageInput { display: none; }
+        .icon-btn {
+            cursor: pointer;
+            color: #c4c7c5;
+            font-size: 20px;
+            transition: color 0.2s;
+            padding: 8px;
+        }
+        .icon-btn:hover { color: #8ab4f8; }
+
+        input[type="text"] {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: white;
+            font-size: 16px;
+            outline: none;
+            padding: 10px 0;
+        }
+
+        .send-btn {
+            color: #8ab4f8;
+            cursor: pointer;
+            font-size: 20px;
+            border: none;
+            background: none;
+        }
+
+        .send-btn:disabled { color: #444; cursor: not-allowed; }
+
+        /* Image Preview Circle */
+        #preview-container {
+            display: none;
+            margin-bottom: 10px;
+            padding-left: 60px;
+        }
+        #img-preview {
+            width: 50px;
+            height: 50px;
+            border-radius: 8px;
+            object-fit: cover;
+            border: 1px solid #8ab4f8;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="logo">Guardian AI</div>
+        <div class="user-profile"><i class="fa-solid fa-circle-user" style="font-size: 30px;"></i></div>
+    </header>
+
+    <div id="chat-container">
+        <div class="welcome-screen" id="welcome">
+            <h1>Hello, I'm Guardian</h1>
+            <p>Paste a message or upload a screenshot to detect fraud instantly.</p>
+        </div>
+        <div id="results-area"></div>
+        <div class="loader" id="loader">
+            <i class="fa-solid fa-sparkles fa-spin"></i> Analyzing potential threats...
+        </div>
+    </div>
+
+    <div class="input-wrapper">
+        <div id="preview-container">
+            <img id="img-preview" src="" alt="Preview">
+            <i class="fa-solid fa-xmark" style="cursor:pointer; font-size: 12px; margin-left: 5px;" onclick="clearImage()"></i>
+        </div>
+
+        <div class="input-bar">
+            <label for="imageInput" class="icon-btn" title="Upload screenshot">
+                <i class="fa-regular fa-image"></i>
+            </label>
+            <input type="file" id="imageInput" accept="image/*" onchange="previewImage(this)">
+
+            <input type="text" id="textInput" placeholder="Message or scam text here..." autocomplete="off">
+            
+            <button class="send-btn" id="sendBtn" onclick="sendToAI()">
+                <i class="fa-solid fa-paper-plane"></i>
+            </button>
+        </div>
+        <p style="text-align: center; font-size: 11px; color: #777; margin-top: 10px;">
+            Guardian AI can make mistakes. Verify important info.
+        </p>
+    </div>
+
+    <script>
+        const textInput = document.getElementById('textInput');
+        const resultsArea = document.getElementById('results-area');
+        const welcomeScreen = document.getElementById('welcome');
+        const loader = document.getElementById('loader');
+
+        function previewImage(input) {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    document.getElementById('img-preview').src = e.target.result;
+                    document.getElementById('preview-container').style.display = 'flex';
+                    document.getElementById('preview-container').style.alignItems = 'center';
+                }
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
+        function clearImage() {
+            document.getElementById('imageInput').value = "";
+            document.getElementById('preview-container').style.display = 'none';
+        }
+
+        async function sendToAI() {
+            const text = textInput.value;
+            const imageFile = document.getElementById('imageInput').files[0];
+
+            if (!text && !imageFile) return;
+
+         
+            welcomeScreen.style.display = 'none';
+            loader.style.display = 'block';
+            textInput.value = "";
+            clearImage();
+
+            const formData = new FormData();
+            formData.append('text', text);
+            if (imageFile) formData.append('image', imageFile);
+
+            try {
+                const response = await fetch('http://localhost:3000/detect', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+                
+                // Add response to chat
+                const box = document.createElement('div');
+                box.className = 'response-box';
+                box.innerHTML = `<strong>Guardian Analysis:</strong><br><br>${data.result.replace(/\n/g, '<br>')}`;
+                resultsArea.appendChild(box);
+                
+                // Scroll to bottom
+                document.getElementById('chat-container').scrollTop = document.getElementById('chat-container').scrollHeight;
+
+            } catch (error) {
+                alert("Backend not connected! Make sure server.js is running on port 3000.");
+            } finally {
+                loader.style.display = 'none';
+            }
+        }
+
+        // Enter key support
+        textInput.addEventListener("keypress", (e) => {
+            if (e.key === "Enter") sendToAI();
+        });
+    </script>
+</body>
+</html>
